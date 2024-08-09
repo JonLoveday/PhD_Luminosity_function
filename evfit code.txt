@@ -50,15 +50,13 @@ L1 : Added from astropy.cosmology import FlatLambdaCDM
 
 L42 : 'kc_use_poly': True → 'kc_use_poly': False
 
-L114 : param='r_petro' → param='R_PETRO' // lf_est='kde' → lf_est='weight' // Added survey='GAMAII', area=180, kc_responses=['sdss_u0', 'sdss_g0', 'sdss_r0', 'sdss_i0', 'sdss_z0'], r_band_index=2, p = (22.42, 2.55, 2.24) // Removed use_mp=False
+L114 : param='r_petro' → param='R_PETRO' // lf_est='kde' → lf_est='weight' // Added survey='GAMAII', area=180, kc_responses=['sdss_u0', 'sdss_g0', 'sdss_r0', 'sdss_i0', 'sdss_z0'], r_band_index=2, p = (22.42, 2.55, 2.24)
 
 L127 : Added kc = Kcorrect(responses=kc_responses)
 
 L129 : Added 'survey': survey, 'area': area, 'kc': kc, 'r_index': r_band_index, 'p': p
 
 L135, L136, L137, L147, L186, L259, L277, L290, L348, L363, L372, L378, L421, L481, L489, L496, L510, L625, L637, L679, L693, L852, L890, L911, L928 : print ... → print(...)
-
-L163-166 : removed
 
 L167 : replaced by chi2grid = np.array([[costfn((P, Q)) for P in Pa] for Q in tqdm(Qa)])
 
