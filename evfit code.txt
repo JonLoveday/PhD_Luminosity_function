@@ -50,13 +50,15 @@ L1 : Added from astropy.cosmology import FlatLambdaCDM
 
 L42 : 'kc_use_poly': True → 'kc_use_poly': False
 
-L114 : param='r_petro' → param='R_PETRO' // lf_est='kde' → lf_est='weight' // Added area=180, kc_responses=['sdss_u0', 'sdss_g0', 'sdss_r0', 'sdss_i0', 'sdss_z0'], r_band_index=2, p = (22.42, 2.55, 2.24)
+L114 : param='r_petro' → param='R_PETRO' // lf_est='kde' → lf_est='weight' // Added survey='GAMAII', area=180, kc_responses=['sdss_u0', 'sdss_g0', 'sdss_r0', 'sdss_i0', 'sdss_z0'], r_band_index=2, p = (22.42, 2.55, 2.24) // Removed use_mp=False
 
 L127 : Added kc = Kcorrect(responses=kc_responses)
 
-L129 : Added 'area': area, 'kc': kc, 'r_index': r_band_index, 'p': p
+L129 : Added 'survey': survey, 'area': area, 'kc': kc, 'r_index': r_band_index, 'p': p
 
 L135, L136, L137, L147, L186, L259, L277, L290, L348, L363, L372, L378, L421, L481, L489, L496, L510, L625, L637, L679, L693, L852, L890, L911, L928 : print ... → print(...)
+
+L163-166 : removed
 
 L167 : replaced by chi2grid = np.array([[costfn((P, Q)) for P in Pa] for Q in tqdm(Qa)])
 
@@ -106,9 +108,22 @@ L248 : par['z0'] = header['Z0'] → par['z0'] = 0
 
 L249 : par['area'] = header['AREA'] * (math.pi/180.0)**2 → par['area'] = par['area'] * (math.pi/180.0)**2
 
-L250 : cosmo = util.CosmoLookup(par['H0'], par['omega_l'], (zmin, zmax)) → cosmo = CosmoLookup(par['H0'], par['omega_l'], (zmin, zmax)) 
+L250 : replaced by cosmo = CosmoLookup(par['H0'], par['omega_l'], (zmin, zmax)) 
 
 L263-268 : Removed
+
+L270-273 : replaced by if par['survey'] == 'GAMAII':
+			 sel = ((tbdata['SURVEY_CLASS'] >= 4) * 
+			 (tbdata['NQ'] >= nqmin) * 
+			 (tbdata['Z_TONRY'] >= zmin) * 
+			 (tbdata['Z_TONRY'] <= zmax))
+		       elif par['survey'] == 'GAMAIII':
+			 sel = ((tbdata['SC'] >= 7) * 
+			 (tbdata['NQ'] >= nqmin) * 
+			 (tbdata['Z_TONRY'] >= zmin) * 
+			 (tbdata['Z_TONRY'] <= zmax))
+		       else:
+			 raise ValueError('Survey not supported')
 
 L276 : sel_dict.iteritems() → sel_dict.items()
 
@@ -123,29 +138,38 @@ L297 : ('cataid', int32) → ('cataid', int64) // Added ('coeff', 'float32', nk)
 
 L305-314 : Removed
 
-L316 : z = tbdata['z_tonry'] → z = tbdata['Z']
+L315-324 : Replaced by if par['survey'] == 'GAMAII':  
+			 z = tbdata['Z_TONRY']
+			 gal_arr['ra'] = tbdata['RA']
+			 gal_arr['appval_sel'] = tbdata['R_PETRO']
+			 gal_arr['appval_lf'] = tbdata[par['param']]
+			 gal_arr['z'] = z
+			 gal_arr['kc'] = tbdata['r_Kcorrection']
+			 gal_arr['kcoeff'] = np.array(tbdata['pcoeffs'].tolist())
+			 gal_arr['coeff'] = np.array(tbdata['coeffs'].tolist())        
+		       elif par['survey'] == 'GAMAIII':  
+			 z = tbdata['Z_TONRY']
+			 gal_arr['ra'] = tbdata['RAcen']
+			 gal_arr['appval_sel'] = tbdata['m_r']
+			 gal_arr['appval_lf'] = tbdata[par['param']]
+			 gal_arr['z'] = z
+			 gal_arr['kc'] = tbdata['r_Kcorrection']
+			 gal_arr['kcoeff'] = np.array(tbdata['pcoeffs'].tolist())
+			 gal_arr['coeff'] = np.array(tbdata['coeffs'].tolist())
+		       else:
+			 raise ValueError('Survey not supported')   
 
-L317 : Removed
-
-L318 : gal_arr['ra'] = tbdata['ra'] → gal_arr['ra'] = tbdata['RA']
-
-L319 : Removed
-
-L320 : gal_arr['appval_sel'] = tbdata['r_petro'] → gal_arr['appval_sel'] = tbdata['R_PETRO']
-
-L323 : gal_arr['kc'] = tbdata['kcorr_r'] → gal_arr['kc'] = tbdata['r_Kcorrection']
-
-L324 : gal_arr['kcoeff'] = tbdata['pcoeff_r'] → gal_arr['kcoeff'] = np.array(tbdata['pcoeffs'].tolist())
-
-L325 : Added gal_arr['coeff'] = np.array(tbdata['coeffs'].tolist())
-
-L333-352 : Removed
+L333-352 : Replaced by self.kmean = [np.median([x[0] for x in gal_arr['coeff']]), np.median([x[1] for x in gal_arr['coeff']]), np.median([x[2] for x in gal_arr['coeff']]), np.median([x[3] for x in gal_arr['coeff']]), np.median([x[4] for x in gal_arr['coeff']])]
 
 L350, L409, L413, L608, L609, L820, L871, L917, L942 : xrange → range
 
 L351 : replaced by print(gal_arr['cataid'][bad][ibad], file=f)
 
 L359 : Removed
+
+L369 : r_sb → R_SB
+
+L375 : fibermag_r → FIBERMAG_R
 
 L401 : Added coeff = self.gal_arr['coeff']
 
@@ -245,9 +269,15 @@ L604 : Restored
 
 L605 : Removed
 
+L624-627 : Removed
+
+L678-681 : Removed
+
+L692-694 : Removed
+
 L698 : np.polyval → np.polynomial.polynomial.polyval
 
-L722 : removed .value
+L722 : Removed .value
 
 L788 : p = (22.42, 2.55, 2.24) → p = par['p']
 
