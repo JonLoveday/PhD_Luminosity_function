@@ -1,0 +1,297 @@
+ORIGINAL CODES
+
+JSWML source code : https://github.com/JonLoveday/GAMA-clustering/blob/master/jswml.py
+→ JSWML_GITHUB.PY
+util source code : https://github.com/JonLoveday/GAMA-clustering/blob/master/util.py
+
+IMPORTS
+
+from JSWML source code, take :
+→ ev_fit
+→ Sample (class)
+→ Cost (class)
+→ ecorr
+→ z_comp
+→ zdm
+→ dmodk
+→ vis_calc
+→ kcorr
+→ delta_P_solve
+→ delta_solve
+→ lf1d
+→ den_evol
+
+from util source code, take :
+→ CosmoLookup (class)
+
+→ EVFIT_GITHUB.PY
+
+MODIFICATIONS
+
+L1 : Added from astropy.cosmology import FlatLambdaCDM
+	   from astropy import units as u
+	   from scipy.stats import gaussian_kde
+	   from tqdm.notebook import tqdm
+	   import pandas as pd
+	   from kcorrect.kcorrect import Kcorrect
+     Removed import contextlib
+	     import os
+	     from matplotlib.ticker import MaxNLocator
+	     if not(os.environ.has_key('DISPLAY')):
+    		matplotlib.use('Agg')
+	     from mpl_toolkits.axes_grid import AxesGrid
+	     import itertools
+	     import lum
+	     import mpmath
+	     import multiprocessing
+	     import pdb
+	     import time
+	     import util
+
+L42 : 'kc_use_poly': True → 'kc_use_poly': False
+
+L114 : param='r_petro' → param='R_PETRO' // lf_est='kde' → lf_est='weight' // Added area=180, kc_responses=['sdss_u0', 'sdss_g0', 'sdss_r0', 'sdss_i0', 'sdss_z0'], r_band_index=2, p = (22.42, 2.55, 2.24)
+
+L127 : Added kc = Kcorrect(responses=kc_responses)
+
+L129 : Added 'area': area, 'kc': kc, 'r_index': r_band_index, 'p': p
+
+L135, L136, L137, L147, L186, L259, L277, L290, L348, L363, L372, L378, L421, L481, L489, L496, L510, L625, L637, L679, L693, L852, L890, L911, L928 : print ... → print(...)
+
+L167 : replaced by chi2grid = np.array([[costfn((P, Q)) for P in Pa] for Q in tqdm(Qa)])
+
+L182 : Added chi2_min = chi2grid.min()
+             contour_level = chi2_min + 4
+             ax.contour(Pa, Qa, chi2grid, levels=[contour_level], colors='white')
+
+L197-220 : Replaced by out = {
+			   'Pbins': Pbins,
+        		   'Qbins': Qbins,
+        		   'chi2grid': chi2grid,
+        		   'Pa': Pa,
+        		   'Qa': Qa,
+        		   'P': Popt,
+        		   'P_err': 0,
+        		   'Q': Qopt,
+        		   'Q_err': 0,
+        		   'zbin': costfn.zbin,
+        		   'delta': costfn.delta,
+        		   'delta_err': costfn.delta_err,
+        		   'den_var': costfn.den_var,
+        		   'lf_bins': lf_bins,
+        		   'phi': costfn.phi,
+        		   'phi_err': costfn.phi_err,
+        		   'Mbin': costfn.Mbin,
+        		   'Mhist': costfn.Mhist,
+        		   'whist': costfn.whist,
+        		   'ev_fit_chisq': costfn.chisq,
+        		   'ev_fit_nu': costfn.nu
+    }
+
+    hdu = fits.HDUList()
+
+    primary_hdu = fits.PrimaryHDU()
+    hdu.append(primary_hdu)
+
+    for key, value in out.items():
+        hdu.append(fits.ImageHDU(data=value, name=key))
+
+    hdu.writeto(outfile, overwrite=True)
+
+L242-245 : replaced by tbdata = infile
+
+L247 : par['omega_l'] = header['OMEGA_L'] → par['omega_l'] = 0.7
+
+L248 : par['z0'] = header['Z0'] → par['z0'] = 0
+
+L249 : par['area'] = header['AREA'] * (math.pi/180.0)**2 → par['area'] = par['area'] * (math.pi/180.0)**2
+
+L250 : cosmo = util.CosmoLookup(par['H0'], par['omega_l'], (zmin, zmax)) → cosmo = CosmoLookup(par['H0'], par['omega_l'], (zmin, zmax)) 
+
+L263-268 : Removed
+
+L276 : sel_dict.iteritems() → sel_dict.items()
+
+L284-290 : Removed
+
+L293 : Added tbdata.reset_index(drop=True, inplace=True)
+
+L294 : Replaced by pcoeffs_array = np.array(tbdata['pcoeffs'].tolist() 
+                   nk = pcoeffs_array.shape[1]
+
+L297 : ('cataid', int32) → ('cataid', int64) // Added ('coeff', 'float32', nk)
+
+L305-314 : Removed
+
+L316 : z = tbdata['z_tonry'] → z = tbdata['Z']
+
+L317 : Removed
+
+L318 : gal_arr['ra'] = tbdata['ra'] → gal_arr['ra'] = tbdata['RA']
+
+L319 : Removed
+
+L320 : gal_arr['appval_sel'] = tbdata['r_petro'] → gal_arr['appval_sel'] = tbdata['R_PETRO']
+
+L323 : gal_arr['kc'] = tbdata['kcorr_r'] → gal_arr['kc'] = tbdata['r_Kcorrection']
+
+L324 : gal_arr['kcoeff'] = tbdata['pcoeff_r'] → gal_arr['kcoeff'] = np.array(tbdata['pcoeffs'].tolist())
+
+L325 : Added gal_arr['coeff'] = np.array(tbdata['coeffs'].tolist())
+
+L333-352 : Removed
+
+L350, L409, L413, L608, L609, L820, L871, L917, L942 : xrange → range
+
+L351 : replaced by print(gal_arr['cataid'][bad][ibad], file=f)
+
+L359 : Removed
+
+L401 : Added coeff = self.gal_arr['coeff']
+
+L406 : Replaced by self.gal_arr['zlo'] = [zdm(par['mlims'][0] - self.gal_arr['absval_sel'][i], coeff[i], (zmin, zmax), Q) for i in range(ngal)]
+
+L410 : Replaced by self.gal_arr['zhi'] = [zdm(par['mlims'][1] - self.gal_arr['absval_sel'][i], coeff[i], (zmin, zmax), Q) for i in range(ngal)]
+
+L457 : replaced by def __init__(self, samp, nz, zminmax, lf_bins, lf_zbins, method, P_prior, Q_prior, Qmin, Qmax, err_type='jack'):
+                    (zmin, zmax) = zminmax
+
+L490-510 : Replaced by if self.method == 'post':
+                         for Q in ((Qmin, Qmax)):
+                           gala = samp.calc_limits(Q)
+                           Mhist, edges = np.histogram(gala['absval_lf'], lf_bins)
+                           if Q == self.Qmin:
+                             self.binidx *= (Mhist > 9)
+                             print('LF bins at Qmin: ', Mhist)
+                           if Q == self.Qmax:
+                             self.binidx *= (Mhist > 9)
+                             print('LF bins at Qmax: ', Mhist)
+        
+                         print(self.binidx)
+            
+                         def process_boolean_array(arr):
+                           false_indices = [i for i, val in enumerate(arr) if not val]
+                           if not false_indices:
+                             return arr
+
+                           mid_index = len(arr) // 2
+                           for i in false_indices:
+                             if i < mid_index and arr[i + 1]:
+                               arr[:i+1] = [False] * (i+1)
+                             elif i > mid_index and arr[i - 1]:
+                               arr[i:] = [False] * (len(arr) - i)
+
+                           return arr
+            
+                         self.binidx = process_boolean_array(self.binidx)
+                         print(self.binidx)
+            
+                       if self.method == 'lfchi':
+                         for Q in ((Qmin, Qmax)):
+                           gala = samp.calc_limits(Q)
+                           for iz in range(len(lf_zbins)):
+                             zlo = zmin + lf_zbins[iz][0]*zstep
+                             zhi = zmin + lf_zbins[iz][1]*zstep
+                             idx = (zlo <= gala['z']) * (gala['z'] < zhi)
+                             Mhist, edges = np.histogram(gala['absval_lf'][idx], lf_bins)
+                             Mmin = par['mlims'][0] - dmodk(zhi, samp.kmean, Q)
+                             Mmax = par['mlims'][1] - dmodk(zlo, samp.kmean, Q)
+                             Mlo = edges[:-1]
+                             Mhi = edges[1:]
+                             if Q == self.Qmin:
+                               self.binidx[iz, :] *= (Mhi < Mmax) * (Mlo > Mmin) * (Mhist > 9)
+                               print(zlo, zhi, Mmax, len(Mhist[self.binidx[iz, :]]))
+                               print('LF bins at Qmin: ', Mhist)
+                             if Q == self.Qmax:
+                               self.binidx[iz, :] *= (Mhi < Mmax) * (Mlo > Mmin) * (Mhist > 9)
+                               print(zlo, zhi, Mmax, len(Mhist[self.binidx[iz, :]]))
+                               print('LF bins at Qmax: ', Mhist)
+            
+                         print(self.binidx)
+            
+                         def process_2d_boolean_array(arr):
+                           result = []
+                           for row in arr:
+                             false_indices = [i for i, val in enumerate(row) if not val]
+                             if not false_indices:
+                               result.append(row.tolist())  # Convert NumPy array to list
+                               continue
+
+                             mid_index = len(row) // 2
+                             for i in false_indices:
+                               if i < mid_index and (i + 1 < len(row)) and row[i + 1]:
+                                 row[:i + 1] = [False] * (i + 1)
+                               elif i > mid_index and (i - 1 >= 0) and row[i - 1]:
+                                 row[i:] = [False] * (len(row) - i)
+                             result.append(row.tolist())  # Convert NumPy array to list
+
+                           return np.array(result)
+            
+                         self.binidx = process_2d_boolean_array(self.binidx)
+                         print(self.binidx)      
+
+L512 : replaced by def __call__(self, PQ):
+		    (P, Q) = PQ
+
+L526, L531 : self.gala['kcoeff'].transpose() → self.gala['coeff']
+
+L595 : basey=10, nonposy='clip' → base=10, nonpositive='clip'
+
+L596 : 1e-5 → 1e-6
+
+L603, L614, L933 : V → V/u.Mpc**3 
+
+L604 : Restored
+
+L605 : Removed
+
+L698 : np.polyval → np.polynomial.polynomial.polyval
+
+L722 : removed .value
+
+L788 : p = (22.42, 2.55, 2.24) → p = par['p']
+
+L791, L797, L799, L801, L805, L808 : kcoeff → coeff
+
+L835 : kcoeff → coeffs
+
+L837 : replaced by if isinstance(z, float):
+                     z = np.array([z])
+
+                   if np.ndim(coeffs) == 1:
+                     coeffs = [coeffs]    
+                     kcorrect = np.zeros((len(coeffs), len(z)))
+                     for i in range(len(coeffs)):
+                       kcorrect[i] = [x[par['r_index']] for x in par['kc'].kcorrect(redshift=z, coeffs=np.broadcast_to(coeffs[i], (len(z), len(coeffs[i]))), band_shift = par['z0'])]
+                       kcorrect = kcorrect[0][0]
+                   else :
+                     kcorrect = np.zeros((len(coeffs), len(z)))
+                     for i in range(len(coeffs)):
+                       kcorrect[i] = [x[par['r_index']] for x in par['kc'].kcorrect(redshift=z, coeffs=np.broadcast_to(coeffs[i], (len(z), len(coeffs[i]))), band_shift = par['z0'])]        
+                   return kcorrect
+
+L954 : replaced by kde = gaussian_kde(absval, weights=wt)
+
+L958 : added if par['lf_est'] == 'weight':
+               bin_centers = Mbin
+               bin_width = np.diff(lf_bins)[0]
+
+               weights = np.zeros((len(bin_centers), len(absval)))
+               for i in range(len(bin_centers)):
+                 for j in range(len(absval)):
+                   if np.abs(absval[j] - bin_centers[i]) < bin_width:
+                     weights[i, j] = (1 - (np.abs(absval[j] - bin_centers[i]) / bin_width)) * wt[j] * (u.Mpc**3)
+                     if i==0 and absval[j]<min(bin_centers) or i==len(bin_centers) and absval[j]>max(bin_centers):
+                       weights[i, j] = 1 * wt[j] * (u.Mpc**3)
+                   else:
+                     weights[i, j] = 0
+               phi = np.sum(weights, axis=1)
+               kde_bandwidth = 0
+
+L968 : replaced by kde = gaussian_kde(absval[idx], weights=wt[idx])
+
+L970 : added if par['lf_est'] == 'weight':
+               phi_jack[jack, :] = np.sum(weights[:, idx], axis=1) * njack / (njack - 1)
+
+
+
