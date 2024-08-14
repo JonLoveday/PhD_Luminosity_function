@@ -128,7 +128,12 @@ def ev_fit(infile, outfile, mlims=(0, 19.8), param='R_PETRO',
                 'idebug': idebug, 'method': method, 'lf_est': lf_est, 'survey': survey, 'area': area, 'kc': kc, 'r_index': r_band_index, 'p': p})
 
     print('\n************************\njswml.py version ', par['version'])
-    print(method)
+    print('survey : ', survey)
+    print('mlims : ', mlims)
+    print('redshift range : [', zmin, '; ', zmax, ']') 
+    print('area : ', area)
+    print('method : ', method)
+    print('Kcorrect responses : ', kc_responses)
     print(sel_dict)
     assert method in methods
     lf_bins = np.linspace(Mmin, Mmax, Mbin+1)
@@ -193,39 +198,30 @@ def ev_fit(infile, outfile, mlims=(0, 19.8), param='R_PETRO',
         Popt = P_maxl
         Qopt = Q_maxl
 
-    out = {
-        'Pbins': Pbins,
-        'Qbins': Qbins,
-        'chi2grid': chi2grid,
-        'Pa': Pa,
-        'Qa': Qa,
-        'P': Popt,
-        'P_err': 0,
-        'Q': Qopt,
-        'Q_err': 0,
-        'zbin': costfn.zbin,
-        'delta': costfn.delta,
-        'delta_err': costfn.delta_err,
-        'den_var': costfn.den_var,
-        'lf_bins': lf_bins,
-        'phi': costfn.phi,
-        'phi_err': costfn.phi_err,
-        'Mbin': costfn.Mbin,
-        'Mhist': costfn.Mhist,
-        'whist': costfn.whist,
-        'ev_fit_chisq': costfn.chisq,
-        'ev_fit_nu': costfn.nu
-    }
-
-    hdu = fits.HDUList()
-
-    primary_hdu = fits.PrimaryHDU()
-    hdu.append(primary_hdu)
-
-    for key, value in out.items():
-        hdu.append(fits.ImageHDU(data=value, name=key))
-
-    hdu.writeto(outfile, overwrite=True)
+    out['Pbins'] = Pbins
+    out['Qbins'] = Qbins
+    out['chi2grid'] = chi2grid
+    out['Pa'] = Pa
+    out['Qa'] = Qa
+    out['P'] = Popt
+    out['P_err'] = 0
+    out['Q'] = Qopt
+    out['Q_err'] = 0
+    out['zbin'] = costfn.zbin
+    out['delta'] = costfn.delta
+    out['delta_err'] = costfn.delta_err
+    out['den_var'] = costfn.den_var
+    out['lf_bins'] = lf_bins
+    out['phi'] = costfn.phi
+    out['phi_err'] = costfn.phi_err
+    out['Mbin'] = costfn.Mbin
+    out['Mhist'] = costfn.Mhist
+    out['whist'] = costfn.whist
+    out['ev_fit_chisq'] = costfn.chisq
+    out['ev_fit_nu'] = costfn.nu
+    fout = open(outfile, 'wb')
+    pickle.dump(out, fout)
+    fout.close()
     
 #------------------------------------------------------------------------------
 # Classes
@@ -278,8 +274,8 @@ class Sample(object):
         elif par['survey'] == 'GAMAIII':
             sel = ((tbdata['SC'] >= 7) * 
                    (tbdata['NQ'] >= nqmin) * 
-                   (tbdata['Z_TONRY'] >= zmin) * 
-                   (tbdata['Z_TONRY'] <= zmax))
+                   (tbdata['Z'] >= zmin) * 
+                   (tbdata['Z'] <= zmax))
         else:
             raise ValueError('Survey not supported')
 
@@ -326,7 +322,7 @@ class Sample(object):
             gal_arr['kcoeff'] = np.array(tbdata['pcoeffs'].tolist())
             gal_arr['coeff'] = np.array(tbdata['coeffs'].tolist())        
         elif par['survey'] == 'GAMAIII':  
-            z = tbdata['Z_TONRY']
+            z = tbdata['Z']
             gal_arr['ra'] = tbdata['RAcen']
             gal_arr['appval_sel'] = tbdata['m_r']
             gal_arr['appval_lf'] = tbdata[par['param']]
@@ -810,10 +806,10 @@ class CosmoLookup():
         """Distance modulus."""
         return np.interp(z, self._z, self._dist_mod)
 
-    def dist_mod_ke(self, z, kcoeff, kcorr, ecorr):
+    def dist_mod_ke(self, z, coeff, kcorr, ecorr):
         """Returns the K- and e-corrected distance modulus
         DM(z) + k(z) - e(z)."""
-        dm = self.dist_mod(z) + kcorr(z, kcoeff) - ecorr(z)
+        dm = self.dist_mod(z) + kcorr(z, coeff) - ecorr(z)
         return dm
 
     def den_evol(self, z):
@@ -1043,19 +1039,41 @@ def lf1d(gala, V_max_corr, lf_bins):
         phi = kde(Mbin) * wt.sum()
         kde_bandwidth = kde.bandwidth
     if par['lf_est'] == 'weight':
-        bin_centers = Mbin
-        bin_width = np.diff(lf_bins)[0]
+#         bin_centers = Mbin
+#         bin_width = np.diff(lf_bins)[0]
 
-        weights = np.zeros((len(bin_centers), len(absval)))
-        for i in range(len(bin_centers)):
-            for j in range(len(absval)):
-                if np.abs(absval[j] - bin_centers[i]) < bin_width:
-                    weights[i, j] = (1 - (np.abs(absval[j] - bin_centers[i]) / bin_width)) * wt[j] * (u.Mpc**3)
-                    if i==0 and absval[j]<min(bin_centers) or i==len(bin_centers) and absval[j]>max(bin_centers):
-                        weights[i, j] = 1 * wt[j] * (u.Mpc**3)
-                else:
-                    weights[i, j] = 0
-        phi = np.sum(weights, axis=1)
+#         weights = np.zeros((len(bin_centers), len(absval)))
+#         for i in range(len(bin_centers)):
+#             for j in range(len(absval)):
+#                 if np.abs(absval[j] - bin_centers[i]) < bin_width:
+#                     weights[i, j] = (1 - (np.abs(absval[j] - bin_centers[i]) / bin_width)) * wt[j] * (u.Mpc**3)
+#                     if i==0 and absval[j]<min(bin_centers) or i==len(bin_centers) and absval[j]>max(bin_centers):
+#                         weights[i, j] = 1 * wt[j] * (u.Mpc**3)
+#                 else:
+#                     weights[i, j] = 0
+#         phi = np.sum(weights, axis=1)
+#         kde_bandwidth = 0
+
+        nbins = len(Mbin)
+        bin_width = lf_bins[1] - lf_bins[0]
+        sel = (lf_bins[0] <= absval) * (absval < lf_bins[-1])
+        absval, wt = absval[sel], wt[sel]
+        hist, phi = np.zeros(nbins), np.zeros(nbins)
+        pf = (absval-lf_bins[0])/bin_width - 0.5
+        p = np.floor(pf).astype(int)
+        ok = (p >= 0) * (p < nbins-1)
+        pstar = pf[ok] - p[ok]
+        np.add.at(hist, p[ok], (1-pstar))
+        np.add.at(hist, p[ok]+1, pstar)
+        np.add.at(phi, p[ok], (1-pstar)*wt[ok] * (u.Mpc**3))
+        np.add.at(phi, p[ok]+1, pstar*wt[ok] * (u.Mpc**3))
+        first = (p < 0)
+        hist[0] += len(wt[first] * (u.Mpc**3))
+        phi[0] += np.sum(wt[first] * (u.Mpc**3))
+        last = (p >= nbins-1)
+        hist[nbins-1] += len(wt[last] * (u.Mpc**3))
+        phi[nbins-1] += np.sum(wt[last] * (u.Mpc**3))
+        err = phi/hist**0.5
         kde_bandwidth = 0
 
     # Jackknife errors
@@ -1066,14 +1084,15 @@ def lf1d(gala, V_max_corr, lf_bins):
             phi_jack[jack, :], edges = np.histogram(
                 absval[idx], lf_bins, weights=wt[idx])
             phi_jack[jack, :] *= float(njack)/(njack-1)/np.diff(lf_bins)
+            phi_err = np.sqrt((njack-1) * np.var(phi_jack, axis=0))
         if par['lf_est'] == 'kde':
 #             kde = pyqt_fit.kde.KDE1D(absval[idx], lower=lf_bins[0], 
 #                                      upper=lf_bins[-1], weights=wt[idx])
             kde = gaussian_kde(absval[idx], weights=wt[idx])
             phi_jack[jack, :] = kde(Mbin) * wt[idx].sum() * njack / (njack-1)
+            phi_err = np.sqrt((njack-1) * np.var(phi_jack, axis=0))
         if par['lf_est'] == 'weight':
-            phi_jack[jack, :] = np.sum(weights[:, idx], axis=1) * njack / (njack - 1)
-    phi_err = np.sqrt((njack-1) * np.var(phi_jack, axis=0))
+            phi_err = err
     lf = {'Mbin': Mbin, 'Mhist': Mhist, 'whist': whist, 
           'phi': phi, 'phi_err': phi_err, 'kde_bandwidth': kde_bandwidth}
     return lf
