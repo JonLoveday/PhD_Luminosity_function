@@ -1,0 +1,206 @@
+ORIGINAL CODES
+
+JSWML source code : https://github.com/JonLoveday/GAMA-clustering/blob/master/jswml.py
+→ JSWML_GITHUB.PY
+util source code : https://github.com/JonLoveday/GAMA-clustering/blob/master/util.py
+
+IMPORTS
+
+from JSWML source code, take :
+→ simcat
+→ kcorr
+→ z_comp
+→ ecorr
+
+from util source code, take :
+→ CosmoLookup (class)
+→ ran_fun
+→ ran_dist
+
+→ SIMCAT_GITHUB.PY
+
+MODIFICATIONS
+
+L1 : Added from astropy.cosmology import FlatLambdaCDM
+	   from astropy import units as u
+	   from tqdm.notebook import tqdm
+	   import pandas as pd
+	   from kcorrect.kcorrect import Kcorrect
+     Removed import contextlib
+	     import os
+	     from matplotlib.ticker import MaxNLocator
+	     if not(os.environ.has_key('DISPLAY')):
+    		matplotlib.use('Agg')
+	     from mpl_toolkits.axes_grid import AxesGrid
+	     import itertools
+	     import lum
+	     import multiprocessing
+	     import pmap
+	     import pickle
+	     import pdb
+	     import time
+	     import util
+
+L114 : infile='kcorr.fits' → infile // Removed outfile='jswml_sim.fits' // Added survey='GAMAII', area=180, kc_responses=['sdss_u0', 'sdss_g0', 'sdss_r0', 'sdss_i0', 'sdss_z0'], r_band_index=2, p = (22.42, 2.55, 2.24)
+
+L122, 124 : pc_med → c_med
+
+L159-160 : Replaced by tbdata = infile
+
+L162 : omega_l = header['OMEGA_L'] → omega_l = 0.7
+
+L163 : par['z0'] = header['Z0'] → par['z0'] = 0
+
+L164 : area_dg2 = area_fac*header['AREA'] → area_dg2 = area_fac*area
+
+L166 : util.CosmoLookup → CosmoLookup
+
+L168 : Added kc = Kcorrect(responses=kc_responses)
+	     par['kc'] = kc
+	     par['r_index'] = r_band_index
+
+L170-182 : replaced by if survey=='GAMAII':
+			 sel = ((tbdata['SURVEY_CLASS'] >= 4) * 
+				(tbdata['Z_TONRY'] >= zrange[0]) * 
+				(tbdata['Z_TONRY'] <= zrange[1]) * 
+				(tbdata['NQ'] >= 3))
+			 for ic in range(5):
+			   sel *= np.isfinite([x[ic] for x in tbdata['coeffs']])
+			 tbdata = tbdata[sel]
+			 tbdata.reset_index(drop=True, inplace=True)
+			 nk = len(tbdata)
+			 ra_gal = tbdata['RA']
+			 pc = np.array(tbdata['pcoeffs'].tolist())
+			 c = np.array(tbdata['coeffs'].tolist())
+			 pdim = (c.shape)[1]
+		       elif survey=='GAMAIII':
+			 sel = ((tbdata['SC'] >= 7) * 
+				(tbdata['Z'] >= zrange[0]) * 
+				(tbdata['Z'] <= zrange[1]) * 
+ 				(tbdata['NQ'] >= 3))
+			 for ic in range(5):
+			   sel *= np.isfinite([x[ic] for x in tbdata['coeffs']])
+			 tbdata = tbdata[sel]
+			 tbdata.reset_index(drop=True, inplace=True)
+			 nk = len(tbdata)
+			 ra_gal = tbdata['RAcen']
+			 pc = np.array(tbdata['pcoeffs'].tolist())
+			 c = np.array(tbdata['coeffs'].tolist())
+			 pdim = (c.shape)[1]
+		       else:
+			 raise ValueError('Survey not supported') 
+
+L175, L297, L308 : xrange → range
+
+L187-194 : Replaced by c_med = [np.median([x[0] for x in tbdata['coeffs']]), np.median([x[1] for x in tbdata['coeffs']]), np.median([x[2] for x in tbdata['coeffs']]), np.median([x[3] for x in tbdata['coeffs']]), np.median([x[4] for x in tbdata['coeffs']])]
+		       k_fit = kc.kcorrect(redshift=zbin, coeffs=np.broadcast_to(c_med, (len(zbin), len(c_med))), band_shift = par['z0'])
+		       kmin = np.min(tbdata['r_Kcorrection'])
+		       kmax = np.max(tbdata['r_Kcorrection']) 
+		       print('kmin, kmax =', kmin, kmax)
+
+L190, L234, L279, L296, L303, L323, L336 → print(...)
+
+L196 : Removed
+
+L207 : Added c = np.zeros((nk, pdim))
+	     c_med = np.zeros(pdim)
+
+L218-227 : replaced by if schec_nz:
+			 zlims = np.linspace(0.0, 0.65, 66)
+			 nz = len(zlims) - 1
+			 with open(schec_nz, 'w') as fout:
+			   print('alpha {}, M* {}, phi* {}, Q {}, P {}'.format(
+			       alpha, Mstar, phistar, Q, P), file=fout)
+			   for i in range(nz):
+			     zlo = zlims[i]
+			     zhi = zlims[i+1]
+			     schec_num, err = scipy.integrate.quad(
+				 gam_dv, zlo, zhi, epsabs=1e-3, epsrel=1e-3)
+			     print(0.5*(zlo+zhi), schec_num, file=fout)
+			 return
+
+L241 : Added c_out = np.zeros((nsim, 5))
+
+L247, L248 : util.ran_fun → ran_fun
+
+L259 : Added c_ran = c[kidx, :]
+
+L260 : Replaced by kc = np.array([kcorr(z[i], c_ran[i, :]) for i in range(nsel)])
+
+L264 : Replaced by z, Mabs, mapp, ra, kc, pc_ran, c_ran = z[sel], Mabs[sel], mapp[sel], ra[sel], kc[sel], pc_ran[sel, :], c_ran[sel, :]
+
+L268 : Replaced by z, Mabs, mapp, ra, kc, pc_ran, c_ran = z[:nrem], Mabs[:nrem], mapp[:nrem], ra[:nrem], kc[:nrem], pc_ran[:nrem, :], c_ran[:nrem, :]
+
+L276 : Added c_out[nout:nout+nsel, :] = c_ran
+
+L300 : V[iz] → (V[iz]/(u.Mpc**3))
+
+L319 : Replaced by if survey=='GAMAIII':
+		     survey_class = 7*np.ones(nsamp)
+		   else:
+		     survey_class = 6*np.ones(nsamp)
+
+L338-366 : Replaced by if survey=='GAMAII':
+			 data = {
+			     'R_PETRO': mapp, 
+			     'FIBERMAG_R': r_fibre, 
+			     'R_SB': sb, 
+			     'Z_TONRY': [z_out[i] for i in samp_list], 
+			     'NQ': nQ, 
+			     'SURVEY_CLASS': survey_class, 
+			     'vis_class': vis_class, 
+			     'post_class': post_class, 
+			     'RA': [ra_out[i] for i in samp_list], 
+			     'r_Kcorrection': [kc_out[i].tolist() for i in samp_list], 
+			     'pcoeffs': [pc_out[i].tolist() for i in samp_list], 
+			     'coeffs': [c_out[i].tolist() for i in samp_list], 
+			     'A_r': A_r
+			 }
+		       elif survey=='GAMAIII':
+			 data = {
+			     'm_r': mapp, 
+			     'FIBERMAG_R': r_fibre, 
+			     'R_SB': sb, 
+			     'Z': [z_out[i] for i in samp_list], 
+			     'NQ': nQ, 
+			     'SC': survey_class, 
+			     'vis_class': vis_class, 
+			     'post_class': post_class, 
+			     'RAcen': [ra_out[i] for i in samp_list], 
+			     'r_Kcorrection': [kc_out[i].tolist() for i in samp_list], 
+			     'pcoeffs': [pc_out[i].tolist() for i in samp_list], 
+			     'coeffs': [c_out[i].tolist() for i in samp_list], 
+			     'A_r': A_r
+			 }
+		       else:
+			 raise ValueError('Survey not supported')
+
+		       # Create the DataFrame
+		       df = pd.DataFrame(data)
+
+L380 : Added return df
+
+L396 : Removed .value
+
+L421, L424 : kcoeff → coeff
+
+L452 : kcoeff → coeffs
+
+L454 : replaced by if isinstance(z, float):
+                     z = np.array([z])
+
+                   if np.ndim(coeffs) == 1:
+                     coeffs = [coeffs]    
+                     kcorrect = np.zeros((len(coeffs), len(z)))
+                     for i in range(len(coeffs)):
+                       kcorrect[i] = [x[par['r_index']] for x in par['kc'].kcorrect(redshift=z, coeffs=np.broadcast_to(coeffs[i], (len(z), len(coeffs[i]))), band_shift = par['z0'])]
+                       kcorrect = kcorrect[0][0]
+                   else :
+                     kcorrect = np.zeros((len(coeffs), len(z)))
+                     for i in range(len(coeffs)):
+                       kcorrect[i] = [x[par['r_index']] for x in par['kc'].kcorrect(redshift=z, coeffs=np.broadcast_to(coeffs[i], (len(z), len(coeffs[i]))), band_shift = par['z0'])]        
+                   return kcorrect
+
+L466 : Replaced by def z_comp(r_fibre, p):
+
+L468 : Removed
