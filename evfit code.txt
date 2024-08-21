@@ -285,20 +285,16 @@ L791, L797, L799, L801, L805, L808 : kcoeff → coeff
 
 L835 : kcoeff → coeffs
 
-L837 : replaced by if isinstance(z, float):
-                     z = np.array([z])
+L837 : replaced by if np.ndim(coeffs) == 1:
+		     k = par['kc'].kcorrect(redshift=z, coeffs=coeffs, band_shift=par['z0'])
+		     kcorrect = k[par['r_index']]
 
-                   if np.ndim(coeffs) == 1:
-                     coeffs = [coeffs]    
-                     kcorrect = np.zeros((len(coeffs), len(z)))
-                     for i in range(len(coeffs)):
-                       kcorrect[i] = [x[par['r_index']] for x in par['kc'].kcorrect(redshift=z, coeffs=np.broadcast_to(coeffs[i], (len(z), len(coeffs[i]))), band_shift = par['z0'])]
-                       kcorrect = kcorrect[0][0]
-                   else :
-                     kcorrect = np.zeros((len(coeffs), len(z)))
-                     for i in range(len(coeffs)):
-                       kcorrect[i] = [x[par['r_index']] for x in par['kc'].kcorrect(redshift=z, coeffs=np.broadcast_to(coeffs[i], (len(z), len(coeffs[i]))), band_shift = par['z0'])]        
-                   return kcorrect
+		   else :
+		     kcorrect = np.zeros((len(coeffs), len(z)))
+		     for i in range(len(coeffs)):
+		       kcorrect[i] = par['kc'].kcorrect(redshift=z, coeffs=np.broadcast_to(coeffs[i], (len(z), len(coeffs[i]))), band_shift = par['z0'])[:, par['r_index']]
+
+		   return kcorrect
 
 L954 : replaced by kde = gaussian_kde(absval, weights=wt)
 

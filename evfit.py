@@ -898,23 +898,15 @@ def kcorr(z, coeffs):
     """K-correction from polynomial fit."""
 #     return np.polynomial.polynomial.polyval(z - par['z0'], kcoeff)
     
-    if isinstance(z, float):
-        z = np.array([z])
-
     if np.ndim(coeffs) == 1:
-        coeffs = [coeffs]    
-        kcorrect = np.zeros((len(coeffs), len(z)))
-        for i in range(len(coeffs)):
-            kcorrect[i] = [x[par['r_index']] for x in par['kc'].kcorrect(redshift=z, 
-                                                                  coeffs=np.broadcast_to(coeffs[i], (len(z), len(coeffs[i]))), 
-                                                                  band_shift = par['z0'])]
-            kcorrect = kcorrect[0][0]
+        k = par['kc'].kcorrect(redshift=z, coeffs=coeffs, band_shift=par['z0'])
+        kcorrect = k[par['r_index']]
+        
     else :
         kcorrect = np.zeros((len(coeffs), len(z)))
         for i in range(len(coeffs)):
-            kcorrect[i] = [x[par['r_index']] for x in par['kc'].kcorrect(redshift=z, 
-                                                                  coeffs=np.broadcast_to(coeffs[i], (len(z), len(coeffs[i]))), 
-                                                                  band_shift = par['z0'])]        
+            kcorrect[i] = par['kc'].kcorrect(redshift=z, coeffs=np.broadcast_to(coeffs[i], (len(z), len(coeffs[i]))), band_shift = par['z0'])[:, par['r_index']]
+
     return kcorrect
 
 def delta_P_solve(Q, gala, zbin, zhist, V, V_int, S, P_prior, nitermax=50, 
