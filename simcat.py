@@ -14,10 +14,12 @@ import scipy.interpolate
 import scipy.optimize
 import scipy.stats
 from astropy.cosmology import FlatLambdaCDM
+from astropy.table import Table
 from astropy import units as u
 from tqdm.notebook import tqdm
 import pandas as pd
 from kcorrect.kcorrect import Kcorrect
+from PhD_Luminosity_function_final import *
 
 #------------------------------------------------------------------------------
 # Parameters
@@ -102,11 +104,58 @@ den_mass_label = r'$\phi(M)\ (h^3 {\rm Mpc}^{-3} {\rm dex}^{-1})$'
 # Main procedures
 #------------------------------------------------------------------------------
 
-def simcat(infile, 
+def simcat_GII(nsim=10):
+    """Generate nsim simulated catalogues corresponding to GAMA-II."""
+
+    hdul = fits.open('/Users/loveday/data/gama/TilingCatv46.fits')
+    data = hdul[1].data
+    t=Table(data)
+    df = t.to_pandas()
+
+    hdul = fits.open('/Users/loveday/data/gama/ApMatchedCatv06.fits')
+    data = hdul[1].data
+    t=Table(data)
+    df2 = t.to_pandas()
+
+    hdul = fits.open('/Users/loveday/data/gama/GalacticExtinctionv03.fits')
+    data = hdul[1].data
+    t=Table(data)
+    df3 = t.to_pandas()
+
+    df = pd.merge(df, df2[['CATAID', 'FLUX_AUTO_u', 'FLUX_AUTO_g', 'FLUX_AUTO_r', 'FLUX_AUTO_i', 'FLUX_AUTO_z', 'FLUXERR_AUTO_u', 'FLUXERR_AUTO_g', 'FLUXERR_AUTO_r', 'FLUXERR_AUTO_i', 'FLUXERR_AUTO_z']], on='CATAID', how='left')
+    df = pd.merge(df, df3[['CATAID', 'A_u', 'A_g', 'A_r', 'A_i', 'A_z']], on='CATAID', how='left')
+    df = df[(df['SURVEY_CLASS']>=4) & (df['NQ']>=3) & (df['Z']>0.002) & (df['Z']<0.65)]
+
+    df['FLUX_AUTO_u'] = df['FLUX_AUTO_u'] * 10**(0.4 * df['A_u'])
+    df['FLUX_AUTO_g'] = df['FLUX_AUTO_g'] * 10**(0.4 * df['A_g'])
+    df['FLUX_AUTO_r'] = df['FLUX_AUTO_r'] * 10**(0.4 * df['A_r'])
+    df['FLUX_AUTO_i'] = df['FLUX_AUTO_i'] * 10**(0.4 * df['A_i'])
+    df['FLUX_AUTO_z'] = df['FLUX_AUTO_z'] * 10**(0.4 * df['A_z'])
+
+    df = add_column(df, column_name='Z_TONRY')
+    df = kcorrection(
+        df, responses = ['sdss_u0', 'sdss_g0', 'sdss_r0', 'sdss_i0', 'sdss_z0'],
+        fnames = ['FLUX_AUTO_u', 'FLUX_AUTO_g', 'FLUX_AUTO_r', 'FLUX_AUTO_i', 'FLUX_AUTO_z'],
+        ferrnames = ['FLUXERR_AUTO_u', 'FLUXERR_AUTO_g', 'FLUXERR_AUTO_r', 'FLUXERR_AUTO_i', 'FLUXERR_AUTO_z'],
+        rband = 'FLUX_AUTO_r', zband = 'FLUX_AUTO_z', redshift = 'Z_TONRY',
+        survey='GAMAII')
+
+    df = luminosity_distance(df, redshift='Z_TONRY')
+    df = magnitude(df, bands = ['u', 'g', 'r', 'i', 'z'],
+                   fluxbands = ['FLUX_AUTO_u', 'FLUX_AUTO_g', 'FLUX_AUTO_r', 'FLUX_AUTO_i', 'FLUX_AUTO_z'],
+                   lumdist = 'Lum_Distance', kcorrection = 'Kcorrection')
+    for isim in range(nsim):
+        outfile=f'/Users/loveday/data/gama/jswml_adrien/GII_sim_{isim}.fits'
+        simcat(df, outfile)
+
+def simcat(infile, outfile='/Users/loveday/data/gama/jswml_adrien/GII_sim.fits',
            alpha=-1.23, Mstar=-20.70, phistar=0.01, Q=0.7, P=1.8, chi2max=10, 
            Mrange=(-24, -12), mrange=(10, 19.8), zrange=(0.002, 0.65), nz=65, 
            fbad=0.03, do_kcorr=True, area_fac=1.0, nblock=500000, schec_nz=0, 
-           survey='GAMAII', area=180, kc_responses=['sdss_u0', 'sdss_g0', 'sdss_r0', 'sdss_i0', 'sdss_z0'], r_band_index=2, p = (22.42, 2.55, 2.24)):
+           survey='GAMAII', area=180, apply_incomp=True,
+           kc_responses=['sdss_u0', 'sdss_g0', 'sdss_r0', 'sdss_i0', 'sdss_z0'],
+           r_band_index=2, p = (22.42, 2.55, 2.24),
+           rdenfile='/Users/loveday/data/gama/radial_density.fits'):
     """Generate test data for jswml - see Cole (2011) Sec 5."""
 
     def gam_dv(z):
@@ -203,7 +252,7 @@ def simcat(infile,
 #         k_median = np.median(k_array, axis=0)
 #         pc_med = np.polynomial.polynomial.polyfit(zbin, k_median, pdim-1)
 #         k_fit = np.polynomial.polynomial.polyval(zbin, pc_med)
-        c_med = [np.median([x[0] for x in tbdata['coeffs']]), np.median([x[1] for x in tbdata['coeffs']]), np.median([x[2] for x in tbdata['coeffs']]), np.median([x[3] for x in tbdata['coeffs']]), np.median([x[4] for x in tbdata['coeffs']])]
+        c_med = np.median(tbdata['coeffs'], axis=0)
         k_fit = kc.kcorrect(redshift=zbin, coeffs=np.broadcast_to(c_med, (len(zbin), len(c_med))), band_shift = par['z0'])
         kmin = np.min(tbdata['r_Kcorrection'])
         kmax = np.max(tbdata['r_Kcorrection']) 
@@ -299,11 +348,23 @@ def simcat(infile,
         nrem -= nsel
         print(nrem)
 
-    # Randomly resample in redshift bins to induce density fluctuations
-    zbins = np.linspace(zrange[0], zrange[1], nz+1)
-    V_int = area/3.0 * cosmo.dm(zbins)**3
-    V = np.diff(V_int)
-    zcen = zbins[:-1] + 0.5 * (zbins[1]-zbins[0])
+    if rdenfile:
+        # Apply density fluctuations observed in GAMA data
+        rden = Table.read(rdenfile)
+        zcen = rden['zbin']
+        nz = len(zcen)
+        dz = zcen[1] - zcen[0]
+        zbins = zcen - 0.5*dz
+        zbins = np.hstack((zbins, zcen[-1] + dz))
+        delta = rden['delta_av'] - 1
+    else:
+        # Randomly resample in redshift bins to induce density fluctuations
+        zbins = np.linspace(zrange[0], zrange[1], nz+1)
+        V_int = area/3.0 * cosmo.dm(zbins)**3
+        V = np.diff(V_int)
+        zcen = zbins[:-1] + 0.5 * (zbins[1]-zbins[0])
+        delta = np.random.normal(0.0, math.sqrt(J3/(V/(u.Mpc**3))))
+
     zhist, bin_edges = np.histogram(z_out, bins=zbins)
     hist_gen = np.zeros(nz)
     # mapp_samp = []
@@ -318,10 +379,9 @@ def simcat(infile,
     for iz in range(nz):
         zlo = zbins[iz]
         zhi = zbins[iz+1]
-        delta = np.random.normal(0.0, math.sqrt(J3/(V[iz]/(u.Mpc**3))))
-        nsel = int(round((1+delta) * zhist[iz]))
+        nsel = int(round((1+delta[iz]) * zhist[iz]))
         hist_gen[iz] = nsel
-        print(iz, delta, zhist[iz], nsel)
+        print(iz, delta[iz], zhist[iz], nsel)
         if nsel > 0:
             sel = (zlo <= z_out) * (z_out < zhi)
             idx = np.where(sel)
@@ -346,18 +406,19 @@ def simcat(infile,
     A_r = np.zeros(nsamp)
     print(nsamp, ' galaxies after resampling')
 
-    # Assign surface brightness and fibre mag from fits to observed relations
-    # (Loveday+ 2012, App A1)
-    mapp = np.array([mapp_out[i] for i in samp_list])
-    Mabs = np.array([Mabs_out[i] for i in samp_list])
-    sb = 22.42 + 0.029*Mabs + np.random.normal(0.0, 0.76, nsamp)
-    imcomp = np.interp(sb, sb_tab, comp_tab)
-    r_fibre = 5.84 + 0.747*mapp + np.random.normal(0.0, 0.31, nsamp)
-    zcomp = z_comp(r_fibre, p)
-    bad = (imcomp * zcomp < np.random.random(nsamp))
-    nQ[bad] = 0
-    nbad = len(nQ[bad])
-    print(nbad, 'out of', nsamp, 'redshifts marked as bad', float(nbad)/nsamp)
+    if apply_incomp:
+        # Assign surface brightness and fibre mag from fits to observed relations
+        # (Loveday+ 2012, App A1)
+        mapp = np.array([mapp_out[i] for i in samp_list])
+        Mabs = np.array([Mabs_out[i] for i in samp_list])
+        sb = 22.42 + 0.029*Mabs + np.random.normal(0.0, 0.76, nsamp)
+        imcomp = np.interp(sb, sb_tab, comp_tab)
+        r_fibre = 5.84 + 0.747*mapp + np.random.normal(0.0, 0.31, nsamp)
+        zcomp = z_comp(r_fibre, p)
+        bad = (imcomp * zcomp < np.random.random(nsamp))
+        nQ[bad] = 0
+        nbad = len(nQ[bad])
+        print(nbad, 'out of', nsamp, 'redshifts marked as bad', float(nbad)/nsamp)
     
     if survey=='GAMAII':
         data = {
@@ -409,6 +470,9 @@ def simcat(infile,
     ax.set_xlabel('Abs mag M')          
     ax.set_ylabel(r'$N(M)$')    
     plt.draw()
+
+    outtbl = Table(data)
+    outtbl.write(outfile, overwrite=True)
 
     return df    
 
