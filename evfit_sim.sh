@@ -4,7 +4,7 @@
 #$ -v PYTHONPATH=/research/astro/gama/loveday/git/PhD_Luminosity_function
 #$ -o /mnt/lustre/scratch/astro/loveday
 #$ -j y
-#$ -m n
+#$ -m eas
 #$ -M J.Loveday@sussex.ac.uk
 # Tell the SGE that this is an array job, with "tasks" to be
 # numbered 1-10 - NB: emails are sent for every task!
@@ -21,6 +21,7 @@
 #$ -notify
 cd /research/astro/gama/loveday/Data/gama/
 python <<EOF
+import os
 taskid = os.environ['SGE_TASK_ID']
 import evfit
 evfit.ev_fit_sim(taskid-1)
