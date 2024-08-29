@@ -8,7 +8,7 @@
 #$ -M J.Loveday@sussex.ac.uk
 # Tell the SGE that this is an array job, with "tasks" to be
 # numbered 1-10 - NB: emails are sent for every task!
-#$ -t 0-9
+#$ -t 1-10
 # When a single command in the array job is sent to a compute
 # node, it’s task number is stored in the variable SGE_TASK_ID,
 # use the value of that variable to get the results you want.
