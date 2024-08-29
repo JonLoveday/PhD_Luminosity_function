@@ -28,7 +28,7 @@ conda activate jon
 python -V
 python <<EOF
 import os
-taskid = os.environ['SGE_TASK_ID']
+taskid = int(os.environ['SGE_TASK_ID'])
 import evfit
 evfit.ev_fit_sim(taskid-1)
 EOF
