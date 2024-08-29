@@ -3,7 +3,10 @@
 # import required environment variables such as PYTHONPATH
 #$ -v PYTHONPATH=/research/astro/gama/loveday/git/PhD_Luminosity_function
 #$ -o /mnt/lustre/scratch/astro/loveday
+# Combine error and output files
 #$ -j y
+# Job class (test.long = 1 week)
+#$ -jc test.long
 #$ -m eas
 #$ -M J.Loveday@sussex.ac.uk
 # Tell the SGE that this is an array job, with "tasks" to be
@@ -20,6 +23,7 @@
 # catch kill and suspend signals
 #$ -notify
 cd /research/astro/gama/loveday/Data/gama/
+python -V
 python <<EOF
 import os
 taskid = os.environ['SGE_TASK_ID']
