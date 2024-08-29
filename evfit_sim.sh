@@ -14,7 +14,7 @@
 # use the value of that variable to get the results you want.
 #
 # specify the queue with optional architecture spec following @@
-#$ -q mps.q
+#$ -q smp.q
 # estimated runtime
 ##$ -l d_rt=08:00:00
 # catch kill and suspend signals
