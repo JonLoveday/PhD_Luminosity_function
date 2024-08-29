@@ -6,7 +6,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import math
 import numpy as np
-import pmap
+#import pmap
 import pickle
 import astropy.io.fits as fits
 #import pyqt_fit.kde
