@@ -23,6 +23,7 @@
 # catch kill and suspend signals
 #$ -notify
 cd /research/astro/gama/loveday/Data/gama/
+module load Anaconda3
 conda activate jon
 python -V
 python <<EOF
