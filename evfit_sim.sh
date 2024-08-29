@@ -7,7 +7,7 @@
 #$ -m n
 #$ -M J.Loveday@sussex.ac.uk
 # Tell the SGE that this is an array job, with "tasks" to be
-# numbered 0-9 - NB: emails are sent for every task!
+# numbered 1-10 - NB: emails are sent for every task!
 #$ -t 0-9
 # When a single command in the array job is sent to a compute
 # node, it’s task number is stored in the variable SGE_TASK_ID,
@@ -23,5 +23,5 @@ cd /research/astro/gama/loveday/Data/gama/
 python <<EOF
 taskid = os.environ['SGE_TASK_ID']
 import evfit
-evfit.ev_fit_sim(taskid)
+evfit.ev_fit_sim(taskid-1)
 EOF
