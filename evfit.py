@@ -104,6 +104,12 @@ den_mass_label = r'$\phi(M)\ (h^3 {\rm Mpc}^{-3} {\rm dex}^{-1})$'
 # Main procedures
 #------------------------------------------------------------------------------
 
+def ev_fit_sim(isim):
+    infile = pd.read_pickle(f'jswml_adrien/GII_sim_{isim}.pkl')
+    outfile = f'jswml_adrien/jswml_GII_sim_{isim}.fits'
+    ev_fit(infile, outfile)
+
+
 def ev_fit(infile, outfile, mlims=(0, 19.8), param='R_PETRO',
            Mmin=-24, Mmax=-12, Mbin=48, dmlim=2,
            zmin=0.002, zmax=0.65, nz=65,

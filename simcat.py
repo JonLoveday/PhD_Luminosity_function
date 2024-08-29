@@ -107,17 +107,17 @@ den_mass_label = r'$\phi(M)\ (h^3 {\rm Mpc}^{-3} {\rm dex}^{-1})$'
 def simcat_GII(nsim=10):
     """Generate nsim simulated catalogues corresponding to GAMA-II."""
 
-    hdul = fits.open('/Users/loveday/data/gama/TilingCatv46.fits')
+    hdul = fits.open('TilingCatv46.fits')
     data = hdul[1].data
     t=Table(data)
     df = t.to_pandas()
 
-    hdul = fits.open('/Users/loveday/data/gama/ApMatchedCatv06.fits')
+    hdul = fits.open('ApMatchedCatv06.fits')
     data = hdul[1].data
     t=Table(data)
     df2 = t.to_pandas()
 
-    hdul = fits.open('/Users/loveday/data/gama/GalacticExtinctionv03.fits')
+    hdul = fits.open('GalacticExtinctionv03.fits')
     data = hdul[1].data
     t=Table(data)
     df3 = t.to_pandas()
@@ -145,10 +145,10 @@ def simcat_GII(nsim=10):
                    fluxbands = ['FLUX_AUTO_u', 'FLUX_AUTO_g', 'FLUX_AUTO_r', 'FLUX_AUTO_i', 'FLUX_AUTO_z'],
                    lumdist = 'Lum_Distance', kcorrection = 'Kcorrection')
     for isim in range(nsim):
-        outfile=f'/Users/loveday/data/gama/jswml_adrien/GII_sim_{isim}.fits'
+        outfile=f'jswml_adrien/GII_sim_{isim}.pkl'
         simcat(df, outfile)
 
-def simcat(infile, outfile='/Users/loveday/data/gama/jswml_adrien/GII_sim.fits',
+def simcat(infile, outfile='jswml_adrien/GII_sim.pkl',
            alpha=-1.23, Mstar=-20.70, phistar=0.01, Q=0.7, P=1.8, chi2max=10, 
            Mrange=(-24, -12), mrange=(10, 19.8), zrange=(0.002, 0.65), nz=65, 
            fbad=0.03, do_kcorr=True, area_fac=1.0, nblock=500000, schec_nz=0, 
@@ -457,6 +457,7 @@ def simcat(infile, outfile='/Users/loveday/data/gama/jswml_adrien/GII_sim.fits',
 
     # Create the DataFrame
     df = pd.DataFrame(data)
+    df.to_pickle(outfile)
 
     plt.clf()
     ax = plt.subplot(2, 1, 1)
@@ -470,9 +471,6 @@ def simcat(infile, outfile='/Users/loveday/data/gama/jswml_adrien/GII_sim.fits',
     ax.set_xlabel('Abs mag M')          
     ax.set_ylabel(r'$N(M)$')    
     plt.draw()
-
-    outtbl = Table(data)
-    outtbl.write(outfile, overwrite=True)
 
     return df    
 
