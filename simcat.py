@@ -155,7 +155,7 @@ def simcat(infile, outfile='jswml_adrien/GII_sim.pkl',
            survey='GAMAII', area=180, apply_incomp=True,
            kc_responses=['sdss_u0', 'sdss_g0', 'sdss_r0', 'sdss_i0', 'sdss_z0'],
            r_band_index=2, p = (22.42, 2.55, 2.24),
-           rdenfile='/Users/loveday/data/gama/radial_density.fits'):
+           rdenfile='RadialDensityv01.fits'):
     """Generate test data for jswml - see Cole (2011) Sec 5."""
 
     def gam_dv(z):
@@ -351,12 +351,12 @@ def simcat(infile, outfile='jswml_adrien/GII_sim.pkl',
     if rdenfile:
         # Apply density fluctuations observed in GAMA data
         rden = Table.read(rdenfile)
-        zcen = rden['zbin']
+        zcen = rden['Z']
         nz = len(zcen)
         dz = zcen[1] - zcen[0]
         zbins = zcen - 0.5*dz
         zbins = np.hstack((zbins, zcen[-1] + dz))
-        delta = rden['delta_av'] - 1
+        delta = rden['delta_AV'] - 1
     else:
         # Randomly resample in redshift bins to induce density fluctuations
         zbins = np.linspace(zrange[0], zrange[1], nz+1)

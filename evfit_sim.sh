@@ -30,5 +30,5 @@ python <<EOF
 import os
 taskid = int(os.environ['SGE_TASK_ID'])
 import evfit
-evfit.ev_fit_sim(taskid-1)
+evfit.ev_fit_sim_post(taskid-1)
 EOF
