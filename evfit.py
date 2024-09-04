@@ -110,9 +110,20 @@ def ev_fit_sim(isim):
     ev_fit(infile, outfile)
 
 
+def ev_fit_sim_III(isim):
+    infile = pd.read_pickle(f'jswml_adrien/GIII_sim_{isim}.pkl')
+    outfile = f'jswml_adrien/jswml_GIII_sim_{isim}.pkl'
+    ev_fit(infile, outfile)
+
+
 def ev_fit_sim_post(isim):
     infile = pd.read_pickle(f'jswml_adrien/GII_sim_{isim}.pkl')
     outfile = f'jswml_adrien/jswml_post_GII_sim_{isim}.pkl'
+    ev_fit(infile, outfile, method='post')
+
+def ev_fit_sim_post_III(isim):
+    infile = pd.read_pickle(f'jswml_adrien/GIII_sim_{isim}.pkl')
+    outfile = f'jswml_adrien/jswml_post_GIII_sim_{isim}.pkl'
     ev_fit(infile, outfile, method='post')
 
 

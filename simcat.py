@@ -148,6 +148,34 @@ def simcat_GII(nsim=10):
         outfile=f'jswml_adrien/GII_sim_{isim}.pkl'
         simcat(df, outfile)
 
+
+def simcat_GIII(nsim=10):
+    """Generate nsim simulated catalogues corresponding to GAMA-III."""
+
+    with fits.open('DR4/gkvScienceCatv02.fits') as hdul:
+        data = hdul[1].data
+        t=Table(data)
+        df = t.to_pandas()
+
+    df = df[(df['NQ']>2) & (df['SC']>=7) & (df['mag']<19.72) & (df['RAcen']<300)]
+
+    df = kcorrection(
+        df, responses=['vst_u', 'vst_g', 'vst_r', 'vst_i', 'vista_z'],
+        fnames=['flux_ut', 'flux_gt', 'flux_rt', 'flux_it', 'flux_Zt'],
+        ferrnames=['flux_err_ut', 'flux_err_gt', 'flux_err_rt', 'flux_err_it', 'flux_err_Zt'],
+        redshift='Z')
+
+    df = luminosity_distance(df, redshift='Z')
+    df = magnitude(
+        df, bands=['u', 'g', 'r', 'i', 'Z'],
+        fluxbands = ['flux_ut', 'flux_gt', 'flux_rt', 'flux_it', 'flux_Zt'])
+
+    for isim in range(nsim):
+        outfile=f'jswml_adrien/GIII_sim_{isim}.pkl'
+        simcat(df, outfile, mrange=(10, 19.72), survey='GAMAIII', area=180,
+               kc_responses=['vst_u', 'vst_g', 'vst_r', 'vst_i', 'vista_z'])
+
+
 def simcat(infile, outfile='jswml_adrien/GII_sim.pkl',
            alpha=-1.23, Mstar=-20.70, phistar=0.01, Q=0.7, P=1.8, chi2max=10, 
            Mrange=(-24, -12), mrange=(10, 19.8), zrange=(0.002, 0.65), nz=65, 
