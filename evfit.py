@@ -113,7 +113,9 @@ def ev_fit_sim(isim):
 def ev_fit_sim_III(isim):
     infile = pd.read_pickle(f'jswml_adrien/GIII_sim_{isim}.pkl')
     outfile = f'jswml_adrien/jswml_GIII_sim_{isim}.pkl'
-    ev_fit(infile, outfile)
+    ev_fit(infile, outfile, survey='GAMAIII', mlims=(0, 19.72), param='m_r',
+           Mmin=-24, Mmax=-14, Mbin=40, area=180,
+           kc_responses=['vst_u', 'vst_g', 'vst_r', 'vst_i', 'vista_z'])
 
 
 def ev_fit_sim_post(isim):
@@ -124,7 +126,9 @@ def ev_fit_sim_post(isim):
 def ev_fit_sim_post_III(isim):
     infile = pd.read_pickle(f'jswml_adrien/GIII_sim_{isim}.pkl')
     outfile = f'jswml_adrien/jswml_post_GIII_sim_{isim}.pkl'
-    ev_fit(infile, outfile, method='post')
+    ev_fit(infile, outfile, survey='GAMAIII', method='post', mlims=(0, 19.72),
+           param='m_r', Mmin=-24, Mmax=-14, Mbin=40, area=180,
+           kc_responses=['vst_u', 'vst_g', 'vst_r', 'vst_i', 'vista_z'])
 
 
 def ev_fit(infile, outfile, mlims=(0, 19.8), param='R_PETRO',
