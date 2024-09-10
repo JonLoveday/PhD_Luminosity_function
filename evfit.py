@@ -134,7 +134,7 @@ def ev_fit_sim_post_III(isim):
 
 def ev_fit_III():
     """Run evfir on GAMA-III"""
-    with fits.open('gkvScienceCatv02.fits') as hdul:
+    with fits.open('DR4/gkvScienceCatv02.fits') as hdul:
         data = hdul[1].data
         t = Table(data)
     df = t.to_pandas()
