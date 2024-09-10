@@ -15,12 +15,13 @@ import scipy.interpolate
 import scipy.optimize
 import scipy.stats
 from astropy.cosmology import FlatLambdaCDM
+from astropy.table import Table
 from astropy import units as u
 from scipy.stats import gaussian_kde
 from tqdm.notebook import tqdm
 import pandas as pd
 from kcorrect.kcorrect import Kcorrect
-
+from PhD_Luminosity_function_final import kcorrection, luminosity_distance, magnitude
 #------------------------------------------------------------------------------
 # Parameters
 #------------------------------------------------------------------------------
@@ -128,6 +129,27 @@ def ev_fit_sim_post_III(isim):
     outfile = f'jswml_adrien/jswml_post_GIII_sim_{isim}.pkl'
     ev_fit(infile, outfile, survey='GAMAIII', method='post', mlims=(0, 19.72),
            param='m_r', Mmin=-24, Mmax=-14, Mbin=40, area=180,
+           kc_responses=['vst_u', 'vst_g', 'vst_r', 'vst_i', 'vista_z'])
+
+
+def ev_fit_III():
+    """Run evfir on GAMA-III"""
+    with fits.open('gkvScienceCatv02.fits') as hdul:
+        data = hdul[1].data
+        t = Table(data)
+    df = t.to_pandas()
+    df = df[(df['NQ']>2) & (df['SC']>=7) & (df['mag']<19.72) & (df['RAcen']<300)]
+    df = kcorrection(df, responses=['vst_u', 'vst_g', 'vst_r', 'vst_i', 'vista_z'],
+                     fnames=['flux_ut', 'flux_gt', 'flux_rt', 'flux_it', 'flux_Zt'],
+                     ferrnames=['flux_err_ut', 'flux_err_gt', 'flux_err_rt', 'flux_err_it', 'flux_err_Zt'],
+                     redshift='Z')
+    df = luminosity_distance(df, redshift='Z')
+    df = magnitude(df, bands=['u', 'g', 'r', 'i', 'Z'],
+                   fluxbands = ['flux_ut', 'flux_gt', 'flux_rt', 'flux_it', 'flux_Zt'])
+
+    outfile = f'jswml_adrien/jswml_GIII.pkl'
+    ev_fit(df, outfile, survey='GAMAIII', mlims=(0, 19.72), param='m_r',
+           Mmin=-24, Mmax=-14, Mbin=40, area=180,
            kc_responses=['vst_u', 'vst_g', 'vst_r', 'vst_i', 'vista_z'])
 
 
