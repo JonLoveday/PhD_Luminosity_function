@@ -54,8 +54,10 @@ def kcorr_gkv(dataframe, zrange = [0, 2], z0 = 0, pdeg = 4, ntest = 0, responses
         plt.xlabel('Band')
         plt.ylabel('Flux')
         for ibad in bad:
-            close = np.nonzero((abs(redshift - redshift[ibad]) < ztol) *
-                             (0.9 < rz[ibad]/rz) * (rz[ibad]/rz < 1.1))[0]
+            # close = np.nonzero((abs(redshift - redshift[ibad]) < ztol) *
+            #                  (0.9 < rz[ibad]/rz) * (rz[ibad]/rz < 1.1))[0]
+            close = ((abs(redshift - redshift[ibad]) < ztol) *
+                    (0.9 < rz[ibad]/rz) * (rz[ibad]/rz < 1.1)) != 0
             # flux_mean = flux[close, :].mean(axis=-1)
             # ivar_mean = ivar[close, :].sum(axis=-1)
             flux_mean = flux[close, :].mean(axis=0)

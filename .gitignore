@@ -1,2 +1,4 @@
 
 evfit_sim.sh~
+__pycache__/*.pyc
+__pycache__/evfit.cpython-39.pyc
