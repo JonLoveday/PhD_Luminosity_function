@@ -12,6 +12,7 @@
 #
 # specify the queue with optional architecture spec following @@
 #$ -q smp.q
+#$ -l m_mem_free=4G
 # estimated runtime
 ##$ -l d_rt=08:00:00
 # catch kill and suspend signals
