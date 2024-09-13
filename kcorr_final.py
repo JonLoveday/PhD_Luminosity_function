@@ -51,20 +51,21 @@ def kcorr_gkv(dataframe, zrange = [0, 2], z0 = 0, pdeg = 4, ntest = 0,
     ztol = 0.1
     rz = dataframe[rband]/dataframe[zband]
     bad = np.nonzero(coeffs.sum(axis=-1) == 0)[0]
+    good = np.nonzero(coeffs.sum(axis=-1) > 0)[0]
     nbad = len(bad)
     if nbad > 0:
         print('Replacing', nbad, 'bad fits with mean')
         x = rz/np.var(rz)
         y = redshift/np.var(redshift)
-        tree = KDTree(np.hstack(x[~bad], y[~bad]))
+        tree = KDTree(np.hstack(x[good], y[good]))
         plt.clf()
         ax = plt.subplot(111)
         plt.xlabel('Band')
         plt.ylabel('Flux')
         for ibad in bad:
             dd, ii = tree.query(np.hstack(x[ibad], y[ibad]), nclose)
-            flux_mean = flux[[~bad][ii], :].mean(axis=0)
-            ivar_mean = ivar[[~bad][ii], :].sum(axis=0)
+            flux_mean = flux[[good][ii], :].mean(axis=0)
+            ivar_mean = ivar[[good][ii], :].sum(axis=0)
             # close = np.nonzero((abs(redshift - redshift[ibad]) < ztol) *
             #                  (0.9 < rz[ibad]/rz) * (rz[ibad]/rz < 1.1))[0]
             # close = ((abs(redshift - redshift[ibad]) < ztol) *
