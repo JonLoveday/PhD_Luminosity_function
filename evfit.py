@@ -21,7 +21,7 @@ from scipy.stats import gaussian_kde
 from tqdm.notebook import tqdm
 import pandas as pd
 from kcorrect.kcorrect import Kcorrect
-from PhD_Luminosity_function_final import kcorrection, luminosity_distance, magnitude
+from PhD_Luminosity_function_final import add_column, kcorrection, luminosity_distance, magnitude
 #------------------------------------------------------------------------------
 # Parameters
 #------------------------------------------------------------------------------
