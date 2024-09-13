@@ -132,8 +132,48 @@ def ev_fit_sim_post_III(isim):
            kc_responses=['vst_u', 'vst_g', 'vst_r', 'vst_i', 'vista_z'])
 
 
+def ev_fit_II():
+    """Run evfit on GAMA-II"""
+
+    with fits.open('TilingCatv46.fits') as hdul:
+        data = hdul[1].data
+        t = Table(data)
+        df = t.to_pandas()
+    with fits.open('ApMatchedCatv06.fits') as hdul:
+        data = hdul[1].data
+        t = Table(data)
+        df2 = t.to_pandas()
+    with fits.open('GalacticExtinctionv03.fits') as hdul:
+        data = hdul[1].data
+        t = Table(data)
+        df3 = t.to_pandas()
+    df = pd.merge(df, df2[['CATAID', 'FLUX_AUTO_u', 'FLUX_AUTO_g', 'FLUX_AUTO_r', 'FLUX_AUTO_i', 'FLUX_AUTO_z',
+                           'FLUXERR_AUTO_u', 'FLUXERR_AUTO_g', 'FLUXERR_AUTO_r', 'FLUXERR_AUTO_i', 'FLUXERR_AUTO_z']],
+                           on='CATAID', how='left')
+    df = pd.merge(df, df3[['CATAID', 'A_u', 'A_g', 'A_r', 'A_i', 'A_z']],
+                  on='CATAID', how='left')
+    df = df[(df['SURVEY_CLASS']>=4) & (df['NQ']>=3) & (df['Z']>0.002) & (df['Z']<0.65)]
+
+    df['FLUX_AUTO_u'] = df['FLUX_AUTO_u'] * 10**(0.4 * df['A_u'])
+    df['FLUX_AUTO_g'] = df['FLUX_AUTO_g'] * 10**(0.4 * df['A_g'])
+    df['FLUX_AUTO_r'] = df['FLUX_AUTO_r'] * 10**(0.4 * df['A_r'])
+    df['FLUX_AUTO_i'] = df['FLUX_AUTO_i'] * 10**(0.4 * df['A_i'])
+    df['FLUX_AUTO_z'] = df['FLUX_AUTO_z'] * 10**(0.4 * df['A_z'])
+    df = add_column(df, column_name='Z_TONRY')
+    df = kcorrection(df, responses = ['sdss_u0', 'sdss_g0', 'sdss_r0', 'sdss_i0', 'sdss_z0'],
+                     fnames = ['FLUX_AUTO_u', 'FLUX_AUTO_g', 'FLUX_AUTO_r', 'FLUX_AUTO_i', 'FLUX_AUTO_z'],
+                     ferrnames = ['FLUXERR_AUTO_u', 'FLUXERR_AUTO_g', 'FLUXERR_AUTO_r', 'FLUXERR_AUTO_i', 'FLUXERR_AUTO_z'],
+                     rband = 'FLUX_AUTO_r', zband = 'FLUX_AUTO_z', redshift = 'Z_TONRY', survey='GAMAII')
+    df = luminosity_distance(df, redshift='Z_TONRY')
+    df = magnitude(df, bands = ['u', 'g', 'r', 'i', 'z'],
+                   fluxbands = ['FLUX_AUTO_u', 'FLUX_AUTO_g', 'FLUX_AUTO_r', 'FLUX_AUTO_i', 'FLUX_AUTO_z'],
+                   lumdist = 'Lum_Distance', kcorrection = 'Kcorrection')
+    ev_fit(infile=df, outfile='evfit_lfchi_GAMAII.pkl',
+           Mmin=-24, Mmax=-14, Mbin=40, method='lfchi')
+
+
 def ev_fit_III():
-    """Run evfir on GAMA-III"""
+    """Run evfit on GAMA-III"""
     with fits.open('DR4/gkvScienceCatv02.fits') as hdul:
         data = hdul[1].data
         t = Table(data)
@@ -160,7 +200,9 @@ def ev_fit(infile, outfile, mlims=(0, 19.8), param='R_PETRO',
            Pbins=(-0.5, 4.0, 45), Qbins=(0.0, 1.5, 30),
            P_prior=(2, 1), Q_prior=(1, 1),
            idebug=1, method='lfchi', err_type='jack', use_mp=False, opt=True,
-           lf_est='weight', survey='GAMAII', area=180, kc_responses=['sdss_u0', 'sdss_g0', 'sdss_r0', 'sdss_i0', 'sdss_z0'], r_band_index=2, p = (22.42, 2.55, 2.24)):
+           lf_est='weight', survey='GAMAII', area=180,
+           kc_responses=['sdss_u0', 'sdss_g0', 'sdss_r0', 'sdss_i0', 'sdss_z0'],
+           r_band_index=2, p = (22.42, 2.55, 2.24)):
     """Fit evolution parameters and radial overdensities.
     Searches over both Q and P values,
     rather than trying to estimate P from Cole eqn (25).
