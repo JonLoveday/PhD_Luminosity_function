@@ -23,5 +23,5 @@ conda activate jon
 python -V
 python <<EOF
 import evfit
-evfit.ev_fit_III()
+evfit.ev_fit_II()
 EOF
