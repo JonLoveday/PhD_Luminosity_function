@@ -3,8 +3,13 @@ from kcorrect.kcorrect import Kcorrect
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.polynomial import Polynomial
+from scipy.spatial import KDTree
 
-def kcorr_gkv(dataframe, zrange = [0, 2], z0 = 0, pdeg = 4, ntest = 0, responses = ['galex_FUV', 'galex_NUV', 'vst_u', 'vst_g', 'vst_r', 'vst_i', 'vista_z', 'vista_y', 'vista_j', 'vista_h', 'vista_k', 'wise_w1', 'wise_w2'], fnames = ['flux_FUVt', 'flux_NUVt', 'flux_ut', 'flux_gt', 'flux_rt', 'flux_it', 'flux_Zt', 'flux_Yt', 'flux_Jt', 'flux_Ht', 'flux_Kt', 'flux_W1t', 'flux_W2t'], ferrnames = ['flux_err_FUVt', 'flux_err_NUVt', 'flux_err_ut', 'flux_err_gt', 'flux_err_rt', 'flux_err_it', 'flux_err_Zt', 'flux_err_Yt', 'flux_err_Jt', 'flux_err_Ht', 'flux_err_Kt', 'flux_err_W1t', 'flux_err_W2t'], rband = 'flux_rt', zband = 'flux_Zt', redshift = 'Z', survey = 'GAMAIII'):
+def kcorr_gkv(dataframe, zrange = [0, 2], z0 = 0, pdeg = 4, ntest = 0,
+              responses = ['galex_FUV', 'galex_NUV', 'vst_u', 'vst_g', 'vst_r', 'vst_i', 'vista_z', 'vista_y', 'vista_j', 'vista_h', 'vista_k', 'wise_w1', 'wise_w2'],
+              fnames = ['flux_FUVt', 'flux_NUVt', 'flux_ut', 'flux_gt', 'flux_rt', 'flux_it', 'flux_Zt', 'flux_Yt', 'flux_Jt', 'flux_Ht', 'flux_Kt', 'flux_W1t', 'flux_W2t'],
+              ferrnames = ['flux_err_FUVt', 'flux_err_NUVt', 'flux_err_ut', 'flux_err_gt', 'flux_err_rt', 'flux_err_it', 'flux_err_Zt', 'flux_err_Yt', 'flux_err_Jt', 'flux_err_Ht', 'flux_err_Kt', 'flux_err_W1t', 'flux_err_W2t'],
+              rband = 'flux_rt', zband = 'flux_Zt', redshift = 'Z', survey = 'GAMAIII', nclose=100):
     """K-corrections for GAMA-KiDS-VIKING (GKV) catalogues."""
     
     kc = Kcorrect(responses = responses)
@@ -49,19 +54,25 @@ def kcorr_gkv(dataframe, zrange = [0, 2], z0 = 0, pdeg = 4, ntest = 0, responses
     nbad = len(bad)
     if nbad > 0:
         print('Replacing', nbad, 'bad fits with mean')
+        x = rz/np.var(rz)
+        y = redshift/np.var(redshift)
+        tree = KDTree(np.hstack(x[~bad], y[~bad]))
         plt.clf()
         ax = plt.subplot(111)
         plt.xlabel('Band')
         plt.ylabel('Flux')
         for ibad in bad:
+            dd, ii = tree.query(np.hstack(x[ibad], y[ibad]), nclose)
+            flux_mean = flux[[~bad][ii], :].mean(axis=0)
+            ivar_mean = ivar[[~bad][ii], :].sum(axis=0)
             # close = np.nonzero((abs(redshift - redshift[ibad]) < ztol) *
             #                  (0.9 < rz[ibad]/rz) * (rz[ibad]/rz < 1.1))[0]
-            close = ((abs(redshift - redshift[ibad]) < ztol) *
-                    (0.9 < rz[ibad]/rz) * (rz[ibad]/rz < 1.1)) != 0
+            # close = ((abs(redshift - redshift[ibad]) < ztol) *
+            #         (0.9 < rz[ibad]/rz) * (rz[ibad]/rz < 1.1)) != 0
             # flux_mean = flux[close, :].mean(axis=-1)
             # ivar_mean = ivar[close, :].sum(axis=-1)
-            flux_mean = flux[close, :].mean(axis=0)
-            ivar_mean = ivar[close, :].sum(axis=0)
+            # flux_mean = flux[close, :].mean(axis=0)
+            # ivar_mean = ivar[close, :].sum(axis=0)
             coeffs[ibad, :] = kc.fit_coeffs(redshift[ibad], flux_mean, ivar_mean)
             color = next(ax._get_lines.prop_cycler)['color']
             plt.errorbar(range(len(fnames)), flux_mean, yerr=ivar_mean**-0.5, color=color)
