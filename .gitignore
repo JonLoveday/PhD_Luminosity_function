@@ -2,3 +2,4 @@
 evfit_sim.sh~
 __pycache__/*.pyc
 __pycache__/evfit.cpython-39.pyc
+__pycache__/kcorr_final.cpython-39.pyc
