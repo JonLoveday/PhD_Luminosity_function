@@ -46,7 +46,7 @@ def add_column(dataframe, column_file = 'DistancesFramesv14.fits', column_name =
 def kcorrection(dataframe, zrange = [0.002, 0.65], z0 = 0, pdeg = 4, ntest = 0, responses = ['galex_FUV', 'galex_NUV', 'vst_u', 'vst_g', 'vst_r', 'vst_i', 'vista_z', 'vista_y', 'vista_j', 'vista_h', 'vista_k', 'wise_w1', 'wise_w2'], fnames = ['flux_FUVt', 'flux_NUVt', 'flux_ut', 'flux_gt', 'flux_rt', 'flux_it', 'flux_Zt', 'flux_Yt', 'flux_Jt', 'flux_Ht', 'flux_Kt', 'flux_W1t', 'flux_W2t'], ferrnames = ['flux_err_FUVt', 'flux_err_NUVt', 'flux_err_ut', 'flux_err_gt', 'flux_err_rt', 'flux_err_it', 'flux_err_Zt', 'flux_err_Yt', 'flux_err_Jt', 'flux_err_Ht', 'flux_err_Kt', 'flux_err_W1t', 'flux_err_W2t'], rband = 'flux_rt', zband = 'flux_Zt', redshift = 'Z', survey='GAMAIII'):
     """performs k-corrections on the data in the input dataframe. Returned dataframe contains k-correction and pcoeffs columns"""
     
-    kcorrect_dataframe = kcorr_gkv(dataframe, zrange, z0, pdeg, ntest, responses, fnames, ferrnames, rband, zband, redshift)
+    kcorrect_dataframe = kcorr_fit(dataframe, zrange, z0, pdeg, ntest, responses, fnames, ferrnames, rband, zband, redshift)
     return kcorrect_dataframe
 
 def luminosity_distance(dataframe, redshift='Z', H0=100, Om0=0.3, Ode0=0.7):

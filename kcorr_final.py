@@ -4,8 +4,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from numpy.polynomial import Polynomial
 from scipy.spatial import KDTree
+import pdb
 
-def kcorr_gkv(dataframe, zrange = [0, 2], z0 = 0, pdeg = 4, ntest = 0,
+def kcorr_fit(dataframe, zrange = [0, 2], z0 = 0, pdeg = 4, ntest = 0,
               responses = ['galex_FUV', 'galex_NUV', 'vst_u', 'vst_g', 'vst_r', 'vst_i', 'vista_z', 'vista_y', 'vista_j', 'vista_h', 'vista_k', 'wise_w1', 'wise_w2'],
               fnames = ['flux_FUVt', 'flux_NUVt', 'flux_ut', 'flux_gt', 'flux_rt', 'flux_it', 'flux_Zt', 'flux_Yt', 'flux_Jt', 'flux_Ht', 'flux_Kt', 'flux_W1t', 'flux_W2t'],
               ferrnames = ['flux_err_FUVt', 'flux_err_NUVt', 'flux_err_ut', 'flux_err_gt', 'flux_err_rt', 'flux_err_it', 'flux_err_Zt', 'flux_err_Yt', 'flux_err_Jt', 'flux_err_Ht', 'flux_err_Kt', 'flux_err_W1t', 'flux_err_W2t'],
@@ -51,21 +52,20 @@ def kcorr_gkv(dataframe, zrange = [0, 2], z0 = 0, pdeg = 4, ntest = 0,
     ztol = 0.1
     rz = dataframe[rband]/dataframe[zband]
     bad = np.nonzero(coeffs.sum(axis=-1) == 0)[0]
-    good = np.nonzero(coeffs.sum(axis=-1) > 0)[0]
     nbad = len(bad)
     if nbad > 0:
         print('Replacing', nbad, 'bad fits with mean')
         x = rz/np.var(rz)
         y = redshift/np.var(redshift)
-        tree = KDTree(np.vstack((x[good], y[good])))
+        tree = KDTree(np.c_[x, y])
         plt.clf()
         ax = plt.subplot(111)
         plt.xlabel('Band')
         plt.ylabel('Flux')
         for ibad in bad:
-            dd, ii = tree.query(np.vstack((x[ibad], y[ibad])), nclose)
-            flux_mean = flux[[good][ii], :].mean(axis=0)
-            ivar_mean = ivar[[good][ii], :].sum(axis=0)
+            dd, ii = tree.query([x[ibad], y[ibad]], nclose)
+            flux_mean = flux[ii, :].mean(axis=0)
+            ivar_mean = ivar[ii, :].sum(axis=0)
             # close = np.nonzero((abs(redshift - redshift[ibad]) < ztol) *
             #                  (0.9 < rz[ibad]/rz) * (rz[ibad]/rz < 1.1))[0]
             # close = ((abs(redshift - redshift[ibad]) < ztol) *
